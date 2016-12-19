@@ -169,7 +169,7 @@ class Dictionary:
         totalDen = totalTokenFrom * totalTokenTo
 
         if totalDen > 0:
-            return round(float(totalNum) / math.sqrt(totalDen), 4)
+            return float(totalNum) / math.sqrt(totalDen)
 
         return 0
 
@@ -180,6 +180,8 @@ class Dictionary:
 
         Also, for similarities equal to zero, value is not stored. At the end of the method,
         resulting file is stored.
+
+        Final storage will return the inverted similarity 1/sim(a,b)
         :return:
         """
         print 'Calculating similarities between tokens...'
@@ -209,7 +211,7 @@ class Dictionary:
                             if tokenFrom not in similarityMatrix:
                                 similarityMatrix[tokenFrom] = {}
 
-                            similarityMatrix[tokenFrom][tokenTo] = cosineSim
+                            similarityMatrix[tokenFrom][tokenTo] = round(float(1) / cosineSim, 4)
 
         # Store similarities in class
         self.similarityMatrix = similarityMatrix
@@ -230,26 +232,24 @@ class Dictionary:
                 self.similarityMatrix = json.loads(similarityFile.read())
                 similarityFile.close()
 
-    def calculateTokenSimilarity(self, token, tokenList):
+    def calculateSimilarity(self, token1, token2):
         """
         Calculate similarities between tokens and a list of tokens
         :param token: Token to check similarity
         :param tokenList: List of tokens to compare
         :return: Most similar token
         """
-        similarityVector = {}
-
         # Verify if token exists in dictionary
-        if token in self.postingDocuments:
+        if token1 in self.postingDocuments:
             # Get list of documents and total of repetitions of the token
-            documentFrom = self.postingDocuments[token]
+            documentFrom = self.postingDocuments[token1]
 
             # Get document list as set
             documentFromItems = set(documentFrom.keys())
 
-            for tokenTo in tokenList:
+            if token2 in self.postingDocuments:
                 # Get list of documents to other tokens
-                documentTo = self.postingDocuments[tokenTo]
+                documentTo = self.postingDocuments[token2]
                 similarDocuments = documentFromItems.intersection(documentTo.keys())
 
                 # If there are similar documents, calculate cosine similarity
@@ -259,13 +259,10 @@ class Dictionary:
                                                         documentsToken2=documentTo)
 
                     if cosineSim > 0:
-                        similarityVector[tokenTo] = cosineSim
-
-            orderedSimilarity = sorted(similarityVector, key=similarityVector.__getitem__, reverse=True)
-            return orderedSimilarity[0]
+                        return round(float(1) / cosineSim, 4)
 
         # In case token does not exist, return none
-        return None
+        return 0
 
     def getSimilarity(self, token1, token2):
         """
@@ -281,29 +278,6 @@ class Dictionary:
             return self.similarityMatrix[token2][token1]
         else:
             return 0
-
-    def getTokenSimilarity(self, token, tokenList):
-        """
-        Get similarities between tokens and a list of tokens. This method
-        makes use of the similarity matrix loaded from disk to search
-        between similarity values.
-        :param token: Token to check similarity
-        :param tokenList: List of tokens to compare
-        :return: Most similar token
-        """
-        similarityVector = {}
-        for token2 in tokenList:
-            simValue = self.getSimilarity(token1=token, token2=token2)
-
-            if simValue > 0:
-                similarityVector[token2] = simValue
-
-        if len(similarityVector) > 0:
-            orderedSimilarity = sorted(similarityVector, key=similarityVector.__getitem__, reverse=True)
-            return orderedSimilarity[0]
-
-        # In case no similarities found, return None
-        return None
 
     def saveToDisk(self):
         """
@@ -356,7 +330,7 @@ class Dictionary:
             tfidfFile.close()
 
         # Calculate token similarities
-        # self.calculateAllSimilarities()
+        self.calculateAllSimilarities()
 
     def loadFromDisk(self):
         """
@@ -375,6 +349,8 @@ class Dictionary:
                 if 'categories' in indexStats:
                     self.categories = indexStats['categories']
                 indexStatsFile.close()
+        else:
+            return False
 
         # Get posting documents
         postingDocsFilePath = self.dictionaryPath + fileconfig.postingDocsFileName
@@ -382,6 +358,8 @@ class Dictionary:
             with open(postingDocsFilePath, 'r') as postingDocumentsFile:
                 self.postingDocuments = json.loads(postingDocumentsFile.read())
                 postingDocumentsFile.close()
+        else:
+            return False
 
         # Get document list
         documentFilePath = self.dictionaryPath + fileconfig.documentsFileName
@@ -389,6 +367,8 @@ class Dictionary:
             with open(documentFilePath, 'r') as documentsFile:
                 self.documents = json.loads(documentsFile.read())
                 documentsFile.close()
+        else:
+            return False
 
         # Get postings
         postingsFilePath = self.dictionaryPath + fileconfig.postingsFileName
@@ -396,6 +376,8 @@ class Dictionary:
             with open(postingsFilePath, 'r') as postingsFile:
                 self.postings = json.loads(postingsFile.read())
                 postingsFile.close()
+        else:
+            return False
 
         # Get tfidf values
         tfidfFilePath = self.dictionaryPath + fileconfig.tfidfFileName
@@ -403,3 +385,5 @@ class Dictionary:
             with open(tfidfFilePath, 'r') as tfidfFile:
                 self.tfidf = json.loads(tfidfFile.read())
                 tfidfFile.close()
+
+        return True
