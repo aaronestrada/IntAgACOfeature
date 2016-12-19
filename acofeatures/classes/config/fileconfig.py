@@ -7,4 +7,6 @@ tfidfFileName = 'stats.tfidf.json'
 # Index files
 postingDocsFileName = 'index.postingdocs.json'
 documentsFileName = 'index.documents.json'
-postingsFileName = 'indexpostings.json'
+postingsFileName = 'index.postings.json'
+preprocessedDocsFileName = 'index.preprocessed.docs.json'
+similarityFileName = 'index.sim.json'

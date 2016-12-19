@@ -10,8 +10,8 @@ def main():
     :return:
     """
 
-    # List of documents for category
-    categoryDocuments = {}
+    # List of documents
+    documents = {}
 
     # Get Reuters categories
     # print reuters.categories()
@@ -19,54 +19,68 @@ def main():
     # Categories to extract documents
     reutersCategories = ['acq', 'corn', 'crude', 'earn', 'grain', 'interest', 'money-fx', 'ship', 'trade', 'wheat']
 
-    for category in reutersCategories:
-        # Initialize documents for category
-        categoryDocuments[category] = {
-            'training': {},
-            'test': {}
-        }
+    # Initialize documents for category
+    documents = {
+        'training': {},
+        'test': {}
+    }
 
-        # Get IDs for documents in Reuters corpora
-        categoryDocumentItems = reuters.fileids(category)
+    # Different categories for dictionary
+    dictionaryCategories = {
+        'training': set(),
+        'test': set()
+    }
 
-        # Iterate on retrieved documents for the category
-        for documentItem in categoryDocumentItems:
-            documentIdent = documentItem.split('/')
+    # Get IDs for documents in Reuters corpora
+    documentItems = reuters.fileids(reutersCategories)
 
-            if len(documentIdent) == 2:
-                # Get document type (training|tests)
-                documentType = documentIdent[0]
+    # Iterate on retrieved documents for the category
+    for documentItem in documentItems:
+        documentIdent = documentItem.split('/')
 
-                # Get document ID
-                docId = documentIdent[1]
+        if len(documentIdent) == 2:
+            # Get document type (training|tests)
+            documentType = documentIdent[0]
 
-                # Get words from document
-                words = reuters.words(documentItem)
+            # Get document ID
+            docId = documentIdent[1]
 
-                # Raw document
-                # print(reuters.raw(documentItem));
+            # Get words from document
+            words = reuters.words(documentItem)
 
-                # Store document in training or data for a category
-                if (documentType == 'training') or (documentType == 'test'):
-                    categoryDocuments[category][documentType][docId] = words
+            # Get document classes
+            docClasses = set(reuters.categories(documentItem)).intersection(reutersCategories)
+
+            # Take only the first class associated
+            if len(docClasses) > 0:
+                docClass = list(docClasses)[0]
+
+            # Store document in training or data for a category
+            if (documentType == 'training') or (documentType == 'test'):
+                documents[documentType][docId] = {'words': words, 'class': docClass}
+
+                # Add categories to dictionary categories
+                dictionaryCategories[documentType] = dictionaryCategories[documentType].union(docClass)
 
     # List of document set types
     setTypes = ['training', 'test']
 
     # Store items in dictionaries (training and test)
     for documentSetType in setTypes:
-        for category in categoryDocuments:
-            # Create new dictionary
-            dictionary = Dictionary(dictionaryName=category, folderHierarchy=documentSetType)
-            docsTraining = categoryDocuments[category][documentSetType]
+        # Create new dictionary
+        dictionary = Dictionary(dictionaryName=documentSetType, folderHierarchy='')
+        docsTraining = documents[documentSetType]
 
-            # Process all documents in set
-            for docId in docsTraining:
-                dictionary.processDocumentTokens(docId, docsTraining[docId])
+        # Save found categories in dictionary
+        dictionary.setCategories(list(dictionaryCategories[documentSetType]))
 
-            # In case there are documents processed, store in disk
-            if dictionary.documentCount > 0:
-                dictionary.saveToDisk()
+        # Process all documents in set
+        for docId in docsTraining:
+            dictionary.processDocumentTokens(docId, docsTraining[docId]['words'], docsTraining[docId]['class'])
+
+        # In case there are documents processed, store in disk
+        if dictionary.documentCount > 0:
+            dictionary.saveToDisk()
 
 
 if __name__ == '__main__':
