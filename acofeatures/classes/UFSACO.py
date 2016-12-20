@@ -1,4 +1,5 @@
 import random
+from threading import Thread
 from Dictionary import Dictionary
 
 
@@ -71,31 +72,29 @@ class UFSACO:
         Initialize pheromone value for all features
         :return:
         """
-        print 'Initializing pheromone values...'
+        print '[Initializing pheromone values]'
         self.pheromoneValue = {}
 
         for token in self.postingTokens:
             self.pheromoneValue[token] = self.initialPheromone
 
-    def updatePheromone(self, featureCounter):
+    def updatePheromone(self):
         """
         Global pheromone update
-        :param featureCounter: List of feature counter for each iteration in the ACO process
         :return:
         """
-        print 'Updating pheromone values...'
         if self.dictExists is True:
             # Calculate total of feature counter movements
             totalFeatureCounter = 0
-            for token in featureCounter:
-                totalFeatureCounter += featureCounter[token]
+            for token in self.featureCounter:
+                totalFeatureCounter += self.featureCounter[token]
 
             # Update pheromone in each token
             for token in self.postingTokens:
                 tokenPheromoneValue = (1 - self.decayRate) * self.pheromoneValue[token]
 
-                if totalFeatureCounter > 0 and token in featureCounter:
-                    tokenPheromoneValue += float(featureCounter[token]) / totalFeatureCounter
+                if totalFeatureCounter > 0 and token in self.featureCounter:
+                    tokenPheromoneValue += float(self.featureCounter[token]) / totalFeatureCounter
 
                 # Assign new value to pheromone
                 self.pheromoneValue[token] = tokenPheromoneValue
@@ -143,6 +142,55 @@ class UFSACO:
         return float(
             self.pheromoneValue[token2] * (self.dictionary.getSimilarity(token1, token2) ** self.beta)) / totalUnvisited
 
+    def moveAnt(self, antNumber):
+        """
+        Move ant to next feature and modify feature counter
+        :param antNumber: Number of ant to execute movement
+        :return:
+        """
+        # Execute according to the number of features an ant has to move in
+        for featureNumber in range(0, self.numberFeatures):
+            currentFeature = self.ants[antNumber]
+
+            # Get list of unvisited features
+            unvisitedFeatureList = self.postingTokens.difference(self.visitedFeatures[antNumber])
+
+            # Random assignment to choose transition rule [0, 1]
+            transitionSelection = random.random()
+
+            if transitionSelection <= self.exploreExploitCoefficient:
+                # Calculate transition using greedy rule and assign next feature
+                nextFeature = self.greedyTransitionRule(token1=currentFeature,
+                                                        unvisitedTokenList=unvisitedFeatureList)
+            else:
+                # Calculate transition using probabilistic rule
+                totalUnvisited = self.getTotalTransitionRule(currentFeature,
+                                                             unvisitedTokenList=unvisitedFeatureList)
+
+                if totalUnvisited > 0:
+                    argMaxProbValue = 0
+                    # Calculate probability of moving to the next feature
+                    for possibleNextToken in unvisitedFeatureList:
+                        probValue = self.probabilityTransitionRule(token1=currentFeature,
+                                                                   token2=possibleNextToken,
+                                                                   totalUnvisited=totalUnvisited)
+
+                        # In case a higher probability has been found, substitute it
+                        if probValue > argMaxProbValue:
+                            argMaxProbValue = probValue
+                            nextFeature = possibleNextToken
+
+            # Move ant to new feature
+            self.ants[antNumber] = nextFeature
+
+            # Add feature to visited list
+            self.visitedFeatures[antNumber].append(nextFeature)
+
+            # Update counter
+            if nextFeature not in self.featureCounter:
+                self.featureCounter[nextFeature] = 0
+            self.featureCounter[nextFeature] += 1
+
     def searchSubset(self):
         """
         Perform ACO algorithm for searching subset of features
@@ -156,17 +204,22 @@ class UFSACO:
             termCountRange = self.dictionary.termCount - 1
 
             # Execute searching for a number of iterations set in the constructor
-            cycleIteration = self.numberCycles
+            cycleIteration = 1
 
             # Create range for ants
             antRange = range(0, self.numberAnts)
 
             # This part will be executed self.numberCycles times from the constructor
-            while cycleIteration > 0:
+            while cycleIteration <= self.numberCycles:
+                print '[Iteration #' + str(cycleIteration) + ']'
+
                 # Step 2: place ants in random features
-                ants = {}  # Initialize ants in each iteration
-                featureCounter = {}  # Initialize feature counter in each iteration
-                visitedFeatures = {}
+                self.ants = {}  # Initialize ants in each iteration
+                self.featureCounter = {}  # Initialize feature counter in each iteration
+                self.visitedFeatures = {} # Initialize visited features for each ant
+
+                # Ant threads vector to work in parallel
+                antThreads = []
 
                 # This vector is used to assign ants in different features randomly
                 initialFeaturesValues = []
@@ -178,69 +231,30 @@ class UFSACO:
                             break
 
                     # Assign feature to ant and save into list of visited
-                    ants[antNumber] = self.dictionary.postings[randomFeatureValue]
+                    self.ants[antNumber] = self.dictionary.postings[randomFeatureValue]
 
                     # initialize visited features
-                    visitedFeatures[antNumber] = []
+                    self.visitedFeatures[antNumber] = []
 
                     # Append feature value to list
                     initialFeaturesValues.append(randomFeatureValue)
 
-                # Execute according to the number of features each ant has to move in
-                for featureNumber in range(0, self.numberFeatures):
-                    print 'Selecting feature ' + str(featureNumber) + '...'
-                    # Step 3: Move ants to the next feature
-                    for antNumber in antRange:
-                        currentFeature = ants[antNumber]
+                    # Create new thread, append to list
+                    antThreads.append(Thread(target=self.moveAnt(antNumber)))
 
-                        # Get list of unvisited features
-                        unvisitedFeatureList = self.postingTokens.difference(visitedFeatures[antNumber])
+                # Step 3: Move ants to the next feature
+                for antThread in antThreads:
+                    antThread.start()
 
-                        # Random assignment to choose transition rule [0, 1]
-                        transitionSelection = random.uniform(0, 1)
-
-                        if transitionSelection <= self.exploreExploitCoefficient:
-                            # Calculate transition using greedy rule and assign next feature
-                            print 'Moving ant (greedy) ' + str(antNumber) + '...'
-                            nextFeature = self.greedyTransitionRule(token1=currentFeature,
-                                                                    unvisitedTokenList=unvisitedFeatureList)
-                        else:
-                            print 'Moving ant (probabilistic) ' + str(antNumber) + '...'
-                            # Calculate transition using probabilistic rule
-                            totalUnvisited = self.getTotalTransitionRule(currentFeature,
-                                                                         unvisitedTokenList=unvisitedFeatureList)
-
-                            if totalUnvisited > 0:
-                                argMaxProbValue = 0
-                                # Calculate probability of moving to the next feature
-                                for possibleNextToken in unvisitedFeatureList:
-                                    probValue = self.probabilityTransitionRule(token1=currentFeature,
-                                                                               token2=possibleNextToken,
-                                                                               totalUnvisited=totalUnvisited)
-
-                                    # In case a higher probability has been found, substitute it
-                                    if probValue > argMaxProbValue:
-                                        argMaxProbValue = probValue
-                                        nextFeature = possibleNextToken
-
-                        # Move ant to new feature
-                        ants[antNumber] = nextFeature
-
-                        # Add feature to visited list
-                        visitedFeatures[antNumber].append(nextFeature)
-
-                        # Update counter
-                        if nextFeature not in featureCounter:
-                            featureCounter[nextFeature] = 0
-                        featureCounter[nextFeature] += 1
-
-                print featureCounter
+                # Specify to wait until all ants finish
+                for antThread in antThreads:
+                    antThread.join()
 
                 # Step 4: global pheromone update
-                self.updatePheromone(featureCounter=featureCounter)
+                self.updatePheromone()
 
-                # Subtract iteration counter
-                cycleIteration -= 1
+                # Add iteration counter
+                cycleIteration += 1
 
     def getFeatureResults(self, topNumber):
         """

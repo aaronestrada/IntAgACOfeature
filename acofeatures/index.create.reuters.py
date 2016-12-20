@@ -9,13 +9,6 @@ def main():
     Process and index Reuters documents divided into categories (training and test)
     :return:
     """
-
-    # List of documents
-    documents = {}
-
-    # Get Reuters categories
-    # print reuters.categories()
-
     # Categories to extract documents
     reutersCategories = ['acq', 'corn', 'crude', 'earn', 'grain', 'interest', 'money-fx', 'ship', 'trade', 'wheat']
 
