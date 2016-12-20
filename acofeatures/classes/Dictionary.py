@@ -1,6 +1,7 @@
 import os
 import json
 import math
+import re
 from config import dirconfig
 from config import fileconfig
 
@@ -387,3 +388,60 @@ class Dictionary:
                 tfidfFile.close()
 
         return True
+
+    def createArffFile(self, arffFileName, tokenList=[]):
+        """
+        Create ARFF file from dictionary for Weka classification
+        :param arffFileName: File name to store data
+        :param tokenList: Token list to use
+        :return:
+        """
+
+        # Verify if token list has items to use them, otherwise use all postings
+        if len(tokenList) == 0:
+            tokenList = set(self.postings)
+
+        with open(dirconfig.arffPath + arffFileName + '.arff', 'w') as arffFile:
+            # Step 1: header information for ARFF file
+            arffFile.write("@relation 'docs-" + self.dictionaryName + "'\n")
+
+            # Add attribute list (tokens to use in classification)
+            for token in tokenList:
+                token = token.encode('utf-8')
+                token = re.escape(token)
+                arffFile.write("@attribute '" + token + "' {n,y}\n")
+
+            # Add class attribute and list of different classes
+            categoryList = []
+            for category in sorted(self.categories):
+                categoryList.append(re.escape(category))
+
+            arffFile.write("@attribute 'docClass' {" + ','.join(categoryList) + "}\n")
+
+            # Add data attribute
+            arffFile.write("\n@data\n")
+
+            # Step 2: include data values for each document
+            for docId in self.documents:
+
+                # List of document items [tokens + class]
+                documentItems = []
+
+                # get document tokens
+                documentTokens = self.documents[docId]['t']
+
+                for token in tokenList:
+                    if token in documentTokens:
+                        # Whether the token is in the document, add  'y' value.
+                        documentItems.append('y')
+                    else:
+                        # Token is not on document, add 'n' value
+                        documentItems.append('n')
+
+                # Add class to document items
+                documentItems.append(re.escape(self.documents[docId]['c']))
+
+                # Write document items in file
+                arffFile.write(','.join(documentItems) + '\n')
+
+            arffFile.close()

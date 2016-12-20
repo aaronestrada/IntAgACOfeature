@@ -216,7 +216,7 @@ class UFSACO:
                 # Step 2: place ants in random features
                 self.ants = {}  # Initialize ants in each iteration
                 self.featureCounter = {}  # Initialize feature counter in each iteration
-                self.visitedFeatures = {} # Initialize visited features for each ant
+                self.visitedFeatures = {}  # Initialize visited features for each ant
 
                 # Ant threads vector to work in parallel
                 antThreads = []
@@ -256,22 +256,26 @@ class UFSACO:
                 # Add iteration counter
                 cycleIteration += 1
 
-    def getFeatureResults(self, topNumber):
+    def getFeatureResults(self, topNumber, onlyTokens=True):
         """
         Return top m features after searching subset
         :param topNumber: Top number of features to retrieve
+        :param onlyTokens: Get only token list. If False, return also pheromone value
         :return:
         """
-        featureResults = {}
-
         # Sort results based on pheromone value
         orderedFeatures = sorted(self.pheromoneValue, key=self.pheromoneValue.__getitem__, reverse=True)
 
         if len(orderedFeatures) >= topNumber:
             orderedFeatures = orderedFeatures[0:topNumber - 1]
 
-        # Return top m features
-        for token in orderedFeatures:
-            featureResults[token] = self.pheromoneValue[token]
+        # Return only token list
+        if onlyTokens is True:
+            return orderedFeatures
+        else:
+            # Return top m features
+            featureResults = {}
+            for token in orderedFeatures:
+                featureResults[token] = self.pheromoneValue[token]
 
-        return featureResults
+            return featureResults

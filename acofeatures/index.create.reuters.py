@@ -53,7 +53,7 @@ def main():
                 documents[documentType][docId] = {'words': words, 'class': docClass}
 
                 # Add categories to dictionary categories
-                dictionaryCategories[documentType] = dictionaryCategories[documentType].union(docClass)
+                dictionaryCategories[documentType].add(docClass)
 
     # List of document set types
     setTypes = ['training', 'test']

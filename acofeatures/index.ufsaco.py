@@ -1,4 +1,5 @@
 import sys
+from classes.Dictionary import Dictionary
 from classes.UFSACO import UFSACO
 
 
@@ -19,8 +20,16 @@ def main():
     aco.searchSubset()
 
     # Get top-10 feature selection subset
-    print aco.getFeatureResults(topNumber=10)
+    acoFeatureList = aco.getFeatureResults(topNumber=10)
 
+    # Create ARFF file for training
+    trainingDict = aco.dictionary
+    trainingDict.createArffFile(arffFileName=trainingDict.dictionaryName + '-aco', tokenList=acoFeatureList)
+
+    # Load test dictionary and create ARFF file for testing
+    testDictionary = Dictionary(dictionaryName='test', folderHierarchy='')
+    testDictionary.loadFromDisk()
+    testDictionary.createArffFile(arffFileName=testDictionary.dictionaryName + '-aco', tokenList=acoFeatureList)
 
 if __name__ == '__main__':
     sys.exit(main())
