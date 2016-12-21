@@ -30,7 +30,7 @@ class ClassifierDecisionTreeJ48(ClassifierAbstract):
         :return:
         """
         try:
-            dataLoaded = self.loadData()
+            dataLoaded = self.loadClassifierData()
 
             if dataLoaded is True:
                 # Decision tree options
