@@ -44,6 +44,7 @@ class ClassifierAbstract:
         # Default number of K folds for cross validation
         self.evaluationNumFolds = 10
 
+    # Block: Loading data
     def loadArffData(self, arffFileFullPath):
         """
         Load ARFF data from a file
@@ -109,26 +110,23 @@ class ClassifierAbstract:
         """
         Evaluation using test data
         :param testDataArffFileName: File name for testing ARFF
-        :return:
+        :return: TRUE if evaluation was achievable
         """
         if self.classifierInstance is not None:
             print '[Using test data for evaluation]'
-
             try:
-                evaluatorInstance = Evaluation(self.classificationData)
-
                 testFileFullPath = dirconfig.arffPath + testDataArffFileName + '.arff'
                 testData = self.loadArffData(testFileFullPath)
 
                 if testData is not None:
-                    # Use test data to evaluate
-                    evaluatorInstance.test_model(
-                        classifier=self.classifierInstance,
-                        data=testData
-                    )
+                    # Evaluate using test data
+                    evaluatorInstance = Evaluation(data=self.classificationData)
+                    evaluatorInstance.test_model(classifier=self.classifierInstance, data=testData)
 
                     # Store evaluation results
                     self.setEvaluationResults(evaluatorInstance)
+
+                    return True
             except:
                 return False
 
