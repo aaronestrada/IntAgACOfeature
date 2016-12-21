@@ -1,5 +1,4 @@
 from weka.classifiers import Classifier
-
 from ClassifierAbstract import ClassifierAbstract
 
 
@@ -23,6 +22,16 @@ class ClassifierDecisionTreeJ48(ClassifierAbstract):
             # Set default confidence value
             self.confidencevalue = 0.25
 
+        self.unpruned = False
+
+    def setUnprunedTree(self, unpruned):
+        """
+        Set unpruned tree option
+        :param unpruned: If tree result is unpruned or not (TRUE or FALSE)
+        :return:
+        """
+        self.unpruned = unpruned
+
     def build(self):
         """
         Build J48 classifier using data loaded from ARFF
@@ -34,7 +43,10 @@ class ClassifierDecisionTreeJ48(ClassifierAbstract):
 
             if dataLoaded is True:
                 # Decision tree options
-                self.dtOptions = ['-C', str(self.confidenceValue)]
+                if self.unpruned is True:
+                    self.dtOptions = ['-U']
+                else:
+                    self.dtOptions = ['-C', str(self.confidenceValue)]
 
                 # Decision tree classificator
                 print '[Building from training]'

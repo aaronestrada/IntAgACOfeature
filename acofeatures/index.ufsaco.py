@@ -39,7 +39,10 @@ def main():
 
     # After creating ARFF files, test using classification
     # Create Decision Tree instance
-    j48classifier = ClassifierDecisionTreeJ48(arffFileName=trainingArffFileName, confidenceValue=0.25)
+    j48classifier = ClassifierDecisionTreeJ48(arffFileName=trainingArffFileName)
+
+    # Generate unpruned tree
+    j48classifier.setUnprunedTree(True)
 
     try:
         # Start JVM
