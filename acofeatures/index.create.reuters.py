@@ -55,25 +55,25 @@ def main():
                 # Add categories to dictionary categories
                 dictionaryCategories[documentType].add(docClass)
 
-    # List of document set types
-    setTypes = ['training', 'test']
+    # List of document set types with flag to claculate similarities in the dictionary
+    setTypes = {
+        'training': True, # Calculate similarities between tokens
+        'test': False # Do not calculate similarities between tokens
+    }
 
     # Store items in dictionaries (training and test)
-    for documentSetType in setTypes:
+    for documentSetType in setTypes.keys():
         # Create new dictionary
         dictionary = Dictionary(dictionaryName=documentSetType, folderHierarchy='')
         docsTraining = documents[documentSetType]
-
-        # Save found categories in dictionary
-        dictionary.setCategories(list(dictionaryCategories[documentSetType]))
 
         # Process all documents in set
         for docId in docsTraining:
             dictionary.processDocumentTokens(docId, docsTraining[docId]['words'], docsTraining[docId]['class'])
 
-        # In case there are documents processed, store in disk
+        # In case there are documents processed, store in disk and calculate similarities if needed
         if dictionary.documentCount > 0:
-            dictionary.saveToDisk()
+            dictionary.saveToDisk(calculateSimilarities=setTypes[documentSetType])
 
 
 if __name__ == '__main__':

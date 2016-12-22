@@ -49,12 +49,9 @@ class ClassifierDecisionTreeJ48(ClassifierAbstract):
                     self.dtOptions = ['-C', str(self.confidenceValue)]
 
                 # Decision tree classificator
-                print '[Building from training]'
+                print '[Building J48 DT from training]'
                 self.classifierInstance = Classifier(classname="weka.classifiers.trees.J48", options=self.dtOptions)
                 self.classifierInstance.build_classifier(self.classificationData)
-                self.numLeaves = self.classifierInstance.jwrapper.measureNumLeaves()
-                self.treeSize = self.classifierInstance.jwrapper.measureTreeSize()
-
                 return True
         except:
             return False

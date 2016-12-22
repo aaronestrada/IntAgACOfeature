@@ -9,5 +9,5 @@ setup(
     author='Aaron Estrada',
     author_email='aaron.estrada.poggio@gmail.com',
     description='',
-    install_requires=['nltk', 'scikit-learn']
+    install_requires=['nltk', 'python-weka-wrapper']
 )

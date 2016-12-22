@@ -21,6 +21,13 @@ class Dictionary:
         self.tfidf = {}
         self.idf = {}
 
+        # Token information gain and gain ratio values
+        self.tokenInfoGain = {}
+        self.tokenGainRatio = {}
+
+        # Category list
+        self.categories = {}
+
         # Similarity matrix between tokens
         self.similarityMatrix = {}
 
@@ -89,13 +96,12 @@ class Dictionary:
             # Incremet document counter
             self.documentCount += 1
 
-    def setCategories(self, categoryList):
-        """
-        Store list of categories in dictionary
-        :param categoryList: List of categories
-        :return:
-        """
-        self.categories = categoryList
+            # Add category and calculate counter
+            if documentClass not in self.categories:
+                self.categories[documentClass] = 0
+
+            # Increment category counter
+            self.categories[documentClass] += 1
 
     def storeDocumentToken(self, documentId, token, tokenCount):
         """
@@ -145,6 +151,140 @@ class Dictionary:
             self.tfidf[token] = tfidf
             self.idf[token] = round(tokenIdf, 4)
 
+    def calculateInformationGainAndGainRatio(self):
+        # Step 1: Calculate information gain bits for all documents
+        informationGainDocs = 0
+        for category in self.categories:
+            probabilityClass = float(self.categories[category]) / self.documentCount
+
+            if probabilityClass > 0:
+                informationGainDocs += (-probabilityClass * math.log(probabilityClass, 2))
+
+        # Step 1: Calculate information gain bits for each token in documents
+        documentItems = set(self.documents.keys())  # Keep all documents as set
+
+        for token in self.postings:
+            # Information gain of token
+            tokenIGValue = 0
+
+            # Step 1.1: Calculate probabilities of token in each class
+            categoryCounter = {}
+            tokenDocuments = self.postingDocuments[token].keys()
+
+            # Get count of documents containing the token
+            tokenDocumentCount = len(tokenDocuments)
+
+            # Get class for all the documents containing the token, store in categoryCounter
+            for docId in tokenDocuments:
+                documentClass = self.documents[docId]['c']
+
+                if documentClass not in categoryCounter:
+                    categoryCounter[documentClass] = 0
+
+                categoryCounter[documentClass] += 1
+
+            # Calculate information gain of each category for documents having the token
+            informationGainToken = 0
+            for category in categoryCounter:
+                probabilityCategoryClass = float(categoryCounter[category]) / tokenDocumentCount
+
+                if probabilityCategoryClass > 0:
+                    informationGainToken += (-probabilityCategoryClass * math.log(probabilityCategoryClass, 2))
+
+            # Add calculated value to token information gain
+            tokenIGValue += (float(tokenDocumentCount) / self.documentCount) * informationGainToken
+
+            # Step 1.2: Calculate probabilities of no token in each class
+            categoryNoTokenCounter = {}
+            noTokenDocuments = documentItems.difference(tokenDocuments)
+
+            # Get total of documents not having the token
+            tokenNotDocumentCount = self.documentCount - tokenDocumentCount
+
+            for docId in noTokenDocuments:
+                documentClass = self.documents[docId]['c']
+
+                if documentClass not in categoryNoTokenCounter:
+                    categoryNoTokenCounter[documentClass] = 0
+
+                categoryNoTokenCounter[documentClass] += 1
+
+            # Calculate information gain of each category for documents not having the token
+            informationGainNoToken = 0
+            for category in categoryNoTokenCounter:
+                probabilityCategoryClass = float(categoryNoTokenCounter[category]) / tokenNotDocumentCount
+
+                if probabilityCategoryClass > 0:
+                    informationGainNoToken += (-probabilityCategoryClass * math.log(probabilityCategoryClass, 2))
+
+            # Add calculated value to token information gain
+            tokenIGValue += (float(tokenNotDocumentCount) / self.documentCount) * informationGainNoToken
+
+            # Calculate split info for token (Entropy for different values in token)
+            probabilityToken = float(tokenDocumentCount) / self.documentCount
+            probabilityNoToken = float(tokenNotDocumentCount) / self.documentCount
+
+            splitInfoToken = -(probabilityToken * math.log(probabilityToken, 2)) \
+                             - (probabilityNoToken * math.log(probabilityNoToken, 2))
+
+            # Calculate token gain
+            tokenGain = informationGainDocs - tokenIGValue
+
+            # Store token information gain value
+            self.tokenInfoGain[token] = tokenGain
+            self.tokenGainRatio[token] = float(tokenGain) / splitInfoToken
+
+    def getTopFeatures(self, topNumber, method, onlyTokens=True):
+        """
+        Return top features using different statistical feature selection
+        :param topNumber: Top number of tokens to retrieve
+        :param method: Method to get the features (information_gain or gain_ratio)
+        :param onlyTokens: Get only tokens, otherwise, get values and tokens
+        :return: List of tokens | tokens and values
+        """
+        if method == 'information_gain':
+            tokenList = self.tokenInfoGain
+        elif method == 'gain_ratio':
+            tokenList = self.tokenGainRatio
+        else:
+            return False
+
+        # Order features from list
+        orderedFeatures = sorted(tokenList, key=tokenList.__getitem__, reverse=True)
+
+        # Verify top number is not bigger than length of features
+        if len(orderedFeatures) >= topNumber:
+            orderedFeatures = orderedFeatures[0:topNumber - 1]
+
+        # Return only token list
+        if onlyTokens is True:
+            return orderedFeatures
+        else:
+            # Return topNumber features
+            featureResults = {}
+            for token in orderedFeatures:
+                featureResults[token] = self.tokenInfoGain[token]
+
+            return featureResults
+
+    def getInformationGainTopFeatures(self, topNumber, onlyTokens=True):
+        """
+        Get feature relevance using information gain values
+        :param topNumber: Number of features to retrieve
+        :param onlyTokens: TRUE to extract only features, otherwise get IG value as well
+        :return:
+        """
+        return self.getTopFeatures(topNumber=topNumber, onlyTokens=onlyTokens, method='information_gain')
+
+    def getGainRatioTopFeatures(self, topNumber, onlyTokens=True):
+        """
+        Get feature relevance using gain ratio values
+        :param topNumber: Number of features to retrieve
+        :param onlyTokens: TRUE to extract only features, otherwise get GR value as well
+        :return:
+        """
+        return self.getTopFeatures(topNumber=topNumber, onlyTokens=onlyTokens, method='gain_ratio')
+
     def calculateCosineSim(self, documentList, documentsToken1, documentsToken2):
         """
         Calculate cosine similarity between
@@ -185,7 +325,7 @@ class Dictionary:
         Final storage will return the inverted similarity 1/sim(a,b)
         :return:
         """
-        print 'Calculating similarities between tokens...'
+        print '[Calculating similarities between tokens]'
         similarityMatrix = {}
 
         # Go token by token to calculate the similarities between the rest of tokens
@@ -280,11 +420,13 @@ class Dictionary:
         else:
             return 0
 
-    def saveToDisk(self):
+    def saveToDisk(self, calculateSimilarities=True):
         """
         Save index content to disk
         :return:
         """
+        print '[Storing data for dictionary: ' + self.dictionaryName + ']'
+
         # Create folder (if needed)
         self.createDictionaryPath()
 
@@ -313,6 +455,7 @@ class Dictionary:
             postingsFile.close()
 
         # Calculate TF-IDF
+        print '[Calculating TF-IDF]'
         self.calculateTfIdf()
 
         # Dump tf values
@@ -330,8 +473,21 @@ class Dictionary:
             tfidfFile.write(json.dumps(self.tfidf))
             tfidfFile.close()
 
+        # Calculate Information Gain and Gain Ratio for tokens and store in disk
+        print '[Calculating Information Gain and Gain Ratio]'
+        self.calculateInformationGainAndGainRatio()
+
+        with open(self.dictionaryPath + fileconfig.informationGainFileName, 'w') as igFile:
+            igFile.write(json.dumps(self.tokenInfoGain))
+            igFile.close()
+
+        with open(self.dictionaryPath + fileconfig.gainRatioFileName, 'w') as grFile:
+            grFile.write(json.dumps(self.tokenGainRatio))
+            grFile.close()
+
         # Calculate token similarities
-        self.calculateAllSimilarities()
+        if calculateSimilarities is True:
+            self.calculateAllSimilarities()
 
     def loadFromDisk(self):
         """
@@ -387,6 +543,20 @@ class Dictionary:
                 self.tfidf = json.loads(tfidfFile.read())
                 tfidfFile.close()
 
+        # Get information gain values
+        igFilePath = self.dictionaryPath + fileconfig.informationGainFileName
+        if os.path.exists(igFilePath):
+            with open(igFilePath, 'r') as igFile:
+                self.tokenInfoGain = json.loads(igFile.read())
+                igFile.close()
+
+        # Get gain ratio values
+        gainRatioFilePath = self.dictionaryPath + fileconfig.gainRatioFileName
+        if os.path.exists(gainRatioFilePath):
+            with open(gainRatioFilePath, 'r') as gainRatioFile:
+                self.tokenGainRatio = json.loads(gainRatioFile.read())
+                gainRatioFile.close()
+
         return True
 
     def createArffFile(self, arffFileName, tokenList=[]):
@@ -413,7 +583,8 @@ class Dictionary:
 
             # Add class attribute and list of different classes
             categoryList = []
-            for category in sorted(self.categories):
+
+            for category in sorted(self.categories.keys()):
                 categoryList.append(re.escape(category))
 
             arffFile.write("@attribute 'docClass' {" + ','.join(categoryList) + "}\n")

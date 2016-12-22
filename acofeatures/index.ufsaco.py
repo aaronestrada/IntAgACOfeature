@@ -4,6 +4,7 @@ import weka.core.jvm as jvm
 from classes.Dictionary import Dictionary
 from classes.UFSACO import UFSACO
 from classes.ClassifierDecisionTreeJ48 import ClassifierDecisionTreeJ48
+from classes.ClassifierNaiveBayes import ClassifierNaiveBayes
 
 
 def main():
@@ -38,26 +39,40 @@ def main():
     testDictionary.createArffFile(arffFileName=testArffFileName, tokenList=acoFeatureList)
 
     # After creating ARFF files, test using classification
-    # Create Decision Tree instance
+    # Create Decision Tree classifier instance
     j48classifier = ClassifierDecisionTreeJ48(arffFileName=trainingArffFileName)
 
     # Generate unpruned tree
     j48classifier.setUnprunedTree(True)
+
+    # Create Naive Bayes classifier instance
+    nbClassifier = ClassifierNaiveBayes(arffFileName=trainingArffFileName)
 
     try:
         # Start JVM
         jvm.start(max_heap_size='1g')
 
         # Build classifier
-        classifierBuilt = j48classifier.build()
+        j48ClassifierBuilt = j48classifier.build()
 
-        # Evaluate classifier using test data
-        if classifierBuilt is True:
-            evaluationSuccess = j48classifier.testDataEvaluate(testDataArffFileName=testArffFileName)
+        # Evaluate J48 classifier using test data
+        if j48ClassifierBuilt is True:
+            j48EvaluationSuccess = j48classifier.testDataEvaluate(testDataArffFileName=testArffFileName)
 
             # Show evaluation results
-            if evaluationSuccess is True:
+            if j48EvaluationSuccess is True:
                 print j48classifier.evaluationResults
+
+        nbClassifierBuilt = nbClassifier.build()
+
+        # Evaluate Naive Bayes classifier using test data
+        if nbClassifierBuilt is True:
+            nbEvaluationSuccess = nbClassifier.testDataEvaluate(testDataArffFileName=testArffFileName)
+
+            # Show evaluation results
+            if nbEvaluationSuccess is True:
+                print nbClassifier.evaluationResults
+
 
     finally:
         if jvm.started is True:

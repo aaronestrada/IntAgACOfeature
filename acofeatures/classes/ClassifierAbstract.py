@@ -25,8 +25,6 @@ class ClassifierAbstract:
         # Instances and attributes from data
         self.numInstances = 0
         self.numAttributes = 0
-        self.numLeaves = 0
-        self.treeSize = 0
         self.classIndex = None
 
         # Training data for classification
