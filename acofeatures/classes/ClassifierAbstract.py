@@ -16,6 +16,7 @@ class ClassifierAbstract:
         :param arffFileName:  File name to load data
         """
         # Path for ARFF file
+        self.arffFileName = arffFileName
         self.arffFileFullPath = dirconfig.arffPath + arffFileName + '.arff'
 
         # Classes specification
@@ -69,7 +70,7 @@ class ClassifierAbstract:
         :param arffFileFullPath: Path to load data
         :return:
         """
-        print '[Loading ARFF data]'
+        print '[Loading ARFF data ' + self.arffFileName + ']'
 
         # Step 1: load classification training data (from ARFF file)
         classificationData = self.loadArffData(self.arffFileFullPath)

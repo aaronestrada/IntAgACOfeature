@@ -23,8 +23,9 @@ Configuration
 The first step corresponds to configure directories for indexes and ARFF files (used in Weka). Create the file dirconfig.py in /acofeatures/classes/config/ and set the following directories.
 
 ```
-arffPath = '<path_to_project>/arff/'
-dictionaryPath = '<path_to_project>/dictionaries/'
+arffPath = '<path_to_project>/arff/' # Storage of ARFF files generated for classification using Weka
+dictionaryPath = '<path_to_project>/dictionaries/' # Storage of dictionaries (training and test)
+ufsacoConfigPath = '<path_to_project>/ufsacoconf/' # Storage of user-defined configuration for UFSACO
 ```
 Path <path_to_project> is suggested to be inside the system; however you can set the path anywhere as long as the directory has read/write permissions.
 
@@ -39,5 +40,37 @@ Two dictionaries will be constructed in path /dictionaries:
 * training: contains all the documents to construct the classifiers
 * test: documents that will be tested using the constructed classifiers
 
+Running UFSACO algorithm
+---
+```
+$ python acofeatures/ufsaco.py -f <file_name_no_extension_included>
+```
 
+Configuration file are stored in the /ufsacoconf folder. Folder settings are indicated in /acofeatures/classes/config/dirconfig.py file.
+
+Each configuration file accepts the following parameters (view ufsacoconf/conf.example.json file for reference):
+* _numberAnts_: Number of ant agents working as a colony (mandatory).
+* _numberFeatures_: Number of features the ants must select in each iteration (mandatory).
+* _numberCycles_: Number of iterations the ants will work. In each iteration, an ant will select _numberFeatures_ features (default value: 50)
+* _topFeatures_: Number of features to use in the classification task. Prior to build classification models, an ARFF file is constructed using only the number of features. This number will be the same for UFSACO, Information Gain and Gain Ratio feature selection (mandatory).
+* _decayRate_: Pheromone decay rate value (default value: 0.2)
+* _beta_: Beta value for algorithm (default value: 1)
+* _initialPheromone_: Initial pheromone value for all the features (default value: 0.2)
+* _exploreExploitCoeff_: Exploration / exploitation coefficient, used to decide the selection of the next feature (default value: 0.7)
+
+Example of configuration file for running algorithm:
+```
+{
+  "numberAnts": 10,
+  "numberFeatures": 10,
+  "numberCycles": 10,
+  "topFeatures": 10,
+  "decayRate": 0.2,
+  "beta": 1,
+  "initialPheromone": 0.2,
+  "exploreExploitCoeff": 0.7
+}
+
+$ python acofeatures/ufsaco.py -f conf.example
+```
 

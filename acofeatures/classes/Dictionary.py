@@ -23,7 +23,10 @@ class Dictionary:
 
         # Token information gain and gain ratio values
         self.tokenInfoGain = {}
+        self.orderedTokenInfoGain = {}
+
         self.tokenGainRatio = {}
+        self.orderedTokenGainRatio = {}
 
         # Category list
         self.categories = {}
@@ -37,6 +40,7 @@ class Dictionary:
         # Count of terms in index
         self.termCount = 0
 
+        # Store dictionary name
         self.dictionaryName = dictionaryName
 
         if folderHierarchy != '':
@@ -243,14 +247,11 @@ class Dictionary:
         :return: List of tokens | tokens and values
         """
         if method == 'information_gain':
-            tokenList = self.tokenInfoGain
+            orderedFeatures = self.orderedTokenInfoGain
         elif method == 'gain_ratio':
-            tokenList = self.tokenGainRatio
+            orderedFeatures = self.orderedTokenGainRatio
         else:
             return False
-
-        # Order features from list
-        orderedFeatures = sorted(tokenList, key=tokenList.__getitem__, reverse=True)
 
         # Verify top number is not bigger than length of features
         if len(orderedFeatures) >= topNumber:
@@ -548,6 +549,15 @@ class Dictionary:
         if os.path.exists(igFilePath):
             with open(igFilePath, 'r') as igFile:
                 self.tokenInfoGain = json.loads(igFile.read())
+
+                # Sort token by highest information gain
+                self.orderedTokenInfoGain = sorted(
+                    self.tokenInfoGain,
+                    key=self.tokenInfoGain.__getitem__,
+                    reverse=True
+                )
+
+                # Close file
                 igFile.close()
 
         # Get gain ratio values
@@ -556,6 +566,13 @@ class Dictionary:
             with open(gainRatioFilePath, 'r') as gainRatioFile:
                 self.tokenGainRatio = json.loads(gainRatioFile.read())
                 gainRatioFile.close()
+
+            # Sort token by highest information gain
+            self.orderedTokenGainRatio = sorted(
+                self.tokenGainRatio,
+                key=self.tokenGainRatio.__getitem__,
+                reverse=True
+            )
 
         return True
 

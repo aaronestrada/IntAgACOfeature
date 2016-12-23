@@ -1,0 +1,10 @@
+{
+  "numberAnts": 10,
+  "numberFeatures": 10,
+  "numberCycles": 10,
+  "topFeatures": 10,
+  "decayRate": 0.2,
+  "beta": 1,
+  "initialPheromone": 0.2,
+  "exploreExploitCoeff": 0.7
+}
