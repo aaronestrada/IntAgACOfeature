@@ -84,6 +84,9 @@ def main(configFileName, outputFilePath):
         * Information Gain
         * Gain Ratio
         """
+        # Free similiarity matrix for ACO dictionary
+        aco.dictionary.freeSimilarities()
+
         # Get dictionary from ACO
         trainingDict = aco.dictionary
 
@@ -109,7 +112,7 @@ def main(configFileName, outputFilePath):
             classificationResult = {}
 
             # Start JVM
-            jvm.start(max_heap_size='1g')
+            jvm.start(max_heap_size='2g')
 
             for featureType in featureList:
                 # Store classification results for each feature type on each classification model

@@ -374,6 +374,13 @@ class Dictionary:
                 self.similarityMatrix = json.loads(similarityFile.read())
                 similarityFile.close()
 
+    def freeSimilarities(self):
+        """
+        Free memory for similarity matrix
+        :return:
+        """
+        self.similarityMatrix = None
+
     def calculateSimilarity(self, token1, token2):
         """
         Calculate similarities between tokens and a list of tokens
