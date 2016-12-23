@@ -166,6 +166,7 @@ class ClassifierAbstract:
             'num_incorrect': evaluatorInstance.incorrect,
             'percent_incorrect': evaluatorInstance.percent_incorrect,
             'kappa': evaluatorInstance.kappa,
+            'error_rate': evaluatorInstance.error_rate,
             'mean_absolute_error': evaluatorInstance.mean_absolute_error,
             'root_mean_prior_squared_error': evaluatorInstance.root_mean_prior_squared_error,
             'relative_absolute_error': evaluatorInstance.relative_absolute_error,

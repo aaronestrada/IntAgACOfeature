@@ -255,7 +255,7 @@ class Dictionary:
 
         # Verify top number is not bigger than length of features
         if len(orderedFeatures) >= topNumber:
-            orderedFeatures = orderedFeatures[0:topNumber - 1]
+            orderedFeatures = orderedFeatures[0:topNumber]
 
         # Return only token list
         if onlyTokens is True:

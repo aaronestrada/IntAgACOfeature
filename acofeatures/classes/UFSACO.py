@@ -67,6 +67,9 @@ class UFSACO:
             else:
                 self.numberFeatures = self.dictionary.termCount
 
+            # List of feature selection counter for each iteration
+            self.featureCounterIteration = {}
+
     def initPheromone(self):
         """
         Initialize pheromone value for all features
@@ -204,14 +207,14 @@ class UFSACO:
             termCountRange = self.dictionary.termCount - 1
 
             # Execute searching for a number of iterations set in the constructor
-            cycleIteration = 1
+            cycleIteration = 0
 
             # Create range for ants
             antRange = range(0, self.numberAnts)
 
             # This part will be executed self.numberCycles times from the constructor
-            while cycleIteration <= self.numberCycles:
-                print '[Iteration #' + str(cycleIteration) + ']'
+            while cycleIteration < self.numberCycles:
+                print '[Iteration #' + str(cycleIteration + 1) + ']'
 
                 # Step 2: place ants in random features
                 self.ants = {}  # Initialize ants in each iteration
@@ -256,6 +259,9 @@ class UFSACO:
                 # Add iteration counter
                 cycleIteration += 1
 
+                # Store feature counter for iteration
+                self.featureCounterIteration[cycleIteration] = self.featureCounter
+
     def getFeatureResults(self, topNumber, onlyTokens=True):
         """
         Return top m features after searching subset
@@ -267,7 +273,7 @@ class UFSACO:
         orderedFeatures = sorted(self.pheromoneValue, key=self.pheromoneValue.__getitem__, reverse=True)
 
         if len(orderedFeatures) >= topNumber:
-            orderedFeatures = orderedFeatures[0:topNumber - 1]
+            orderedFeatures = orderedFeatures[0:topNumber]
 
         # Return only token list
         if onlyTokens is True:
