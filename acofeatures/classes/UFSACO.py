@@ -256,11 +256,11 @@ class UFSACO:
                 # Step 4: global pheromone update
                 self.updatePheromone()
 
-                # Add iteration counter
-                cycleIteration += 1
-
                 # Store feature counter for iteration
                 self.featureCounterIteration[cycleIteration] = self.featureCounter
+
+                # Add iteration counter
+                cycleIteration += 1
 
     def getFeatureResults(self, topNumber, onlyTokens=True):
         """

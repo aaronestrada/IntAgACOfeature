@@ -1,7 +1,7 @@
 {
-  "numberAnts": 10,
+  "numberAnts": 100,
   "numberFeatures": 10,
-  "numberCycles": 10,
+  "numberCycles": 50,
   "topFeatures": 10,
   "decayRate": 0.2,
   "beta": 1,
