@@ -379,7 +379,8 @@ class Dictionary:
         Free memory for similarity matrix
         :return:
         """
-        self.similarityMatrix = None
+        del(self.similarityMatrix)
+        self.similarityMatrix = {}
 
     def calculateSimilarity(self, token1, token2):
         """
