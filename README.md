@@ -3,7 +3,7 @@ Unsupervised Feature Selection using Ant Colony Optimization (UFSACO)
 
 Simulation of an Unsupervised Feature Selection using Ant Colony Optimization (UFSACO) algorithm. System is implemented in Python 2.7.11.
 
-Details on the algorithm can be found in the following [link](https://www.researchgate.net/publication/261371258).
+Details on the algorithm can be found [here](https://www.researchgate.net/publication/261371258).
 
 # 1. Pre-requisites
 
