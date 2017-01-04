@@ -34,7 +34,7 @@ Path <path_to_project> is suggested to be inside the system; however you can set
 
 ## Dataset
 
-NLTK provides many datasets for text categorization. The following system uses Reuters-21578 corpus on 10 categories. Even when documents belong to many categories, for testing purposes each document will be assigned to only one label. 
+NLTK provides many datasets for text categorization. The following demo uses Reuters-21578 corpus on 10 categories. Even when documents belong to many categories, for testing purposes each document will be assigned to only one label. 
 
 ## Indexing Reuters-21578 corpus
 
@@ -69,12 +69,14 @@ N.B. Indexing process takes a while to execute, specially for the similarity cal
 The following command is used to run the algorithm:
 
 ```
-$ python acofeatures/ufsaco.py -f <file_name_no_extension_included> [-o <output_file_name>]
+$ python acofeatures/ufsaco.py -f <file_name_no_extension_included> [-o <output_file_name>] [-h] [--help]
 ```
 
 * -f <file_name_no_extension_included> (Mandatory) - Defines the configuration file to run the algorithm.  
 
 * -o <output_file_name> (Optional) - Saves the evaluation for the algorithm on the specified output file.
+
+* -h, --help - Display usage help
 
 ### Configuration files for algorithm
 Configuration files are stored in the /ufsacoconf folder. Folder settings are indicated in /acofeatures/classes/config/dirconfig.py file.

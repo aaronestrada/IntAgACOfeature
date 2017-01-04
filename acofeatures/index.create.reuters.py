@@ -57,8 +57,8 @@ def main():
 
     # List of document set types with flag to claculate similarities in the dictionary
     setTypes = {
-        'training': True, # Calculate similarities between tokens
-        'test': False # Do not calculate similarities between tokens
+        'training': True,  # Calculate similarities between tokens
+        'test': False  # Do not calculate similarities between tokens, it won't be used
     }
 
     # Store items in dictionaries (training and test)
@@ -69,7 +69,16 @@ def main():
 
         # Process all documents in set
         for docId in docsTraining:
-            dictionary.processDocumentTokens(docId, docsTraining[docId]['words'], docsTraining[docId]['class'])
+            """
+            Store tokens associated to a document and the class.
+            To create a dictionary with different data, this method will
+            be used to store every feature to a document/item, having
+            a class associated
+            """
+            dictionary.processDocumentTokens(documentId=docId,
+                                             tokens=docsTraining[docId]['words'],
+                                             documentClass=docsTraining[docId]['class']
+                                             )
 
         # In case there are documents processed, store in disk and calculate similarities if needed
         if dictionary.documentCount > 0:

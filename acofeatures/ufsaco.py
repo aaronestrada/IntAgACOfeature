@@ -111,7 +111,7 @@ def main(configFileName, outputFilePath):
             # Store classification results
             classificationResult = {}
 
-            # Start JVM
+            # Start JVM. Configure JAVA maximum memory heap as desired
             jvm.start(max_heap_size='2g')
 
             for featureType in featureList:
