@@ -70,6 +70,9 @@ class UFSACO:
             # List of feature selection counter for each iteration
             self.featureCounterIteration = {}
 
+            # Initialize feature counter variable for ants
+            self.featureCounter = {}
+
     def initPheromone(self):
         """
         Initialize pheromone value for all features
@@ -81,26 +84,40 @@ class UFSACO:
         for token in self.postingTokens:
             self.pheromoneValue[token] = self.initialPheromone
 
-    def updatePheromone(self):
+    def updatePheromone(self, cycleIteration):
         """
         Global pheromone update
+        :param cycleIteration: Iteration of pheromone update
         :return:
         """
         if self.dictExists is True:
+            # Merge feature counters for ants
+            globalFeatureCounter = {}
+            for antNumber in self.featureCounter:
+                antFeatureCounter = self.featureCounter[antNumber]
+                for feature in antFeatureCounter:
+                    if feature not in globalFeatureCounter:
+                        globalFeatureCounter[feature] = antFeatureCounter[feature]
+                    else:
+                        globalFeatureCounter[feature] += antFeatureCounter[feature]
+
             # Calculate total of feature counter movements
             totalFeatureCounter = 0
-            for token in self.featureCounter:
-                totalFeatureCounter += self.featureCounter[token]
+            for token in globalFeatureCounter:
+                totalFeatureCounter += globalFeatureCounter[token]
 
             # Update pheromone in each token
             for token in self.postingTokens:
                 tokenPheromoneValue = (1 - self.decayRate) * self.pheromoneValue[token]
 
-                if totalFeatureCounter > 0 and token in self.featureCounter:
-                    tokenPheromoneValue += float(self.featureCounter[token]) / totalFeatureCounter
+                if totalFeatureCounter > 0 and token in globalFeatureCounter:
+                    tokenPheromoneValue += float(globalFeatureCounter[token]) / totalFeatureCounter
 
                 # Assign new value to pheromone
                 self.pheromoneValue[token] = tokenPheromoneValue
+
+            # Store feature counter for iteration
+            self.featureCounterIteration[cycleIteration] = globalFeatureCounter
 
     def greedyTransitionRule(self, token1, unvisitedTokenList):
         """
@@ -145,20 +162,28 @@ class UFSACO:
         return float(
             self.pheromoneValue[token2] * (self.dictionary.getSimilarity(token1, token2) ** self.beta)) / totalUnvisited
 
-    def moveAnt(self, antNumber):
+    def moveAnt(self, antNumber, currentFeature):
         """
         Move ant to next feature and modify feature counter
         :param antNumber: Number of ant to execute movement
+        :param currentFeature: Feature where ant has been positioned
         :return:
         """
+        # Initialize feature counter
+        featureCounter = {}
+
+        # Initialize visited features
+        visitedFeatures = []
+
         # Execute according to the number of features an ant has to move in
         for featureNumber in range(0, self.numberFeatures):
-            currentFeature = self.ants[antNumber]
-
             # Get list of unvisited features
-            unvisitedFeatureList = self.postingTokens.difference(self.visitedFeatures[antNumber])
+            unvisitedFeatureList = self.postingTokens.difference(visitedFeatures)
 
-            # Random assignment to choose transition rule [0, 1]
+            """
+            Random assignment to choose transition rule [0, 1]
+            On each feature, ant decides to move in a greedy or probabilistic way
+            """
             transitionSelection = random.random()
 
             if transitionSelection <= self.exploreExploitCoefficient:
@@ -184,21 +209,25 @@ class UFSACO:
                             nextFeature = possibleNextToken
 
             # Move ant to new feature
-            self.ants[antNumber] = nextFeature
+            currentFeature = nextFeature
 
             # Add feature to visited list
-            self.visitedFeatures[antNumber].append(nextFeature)
+            visitedFeatures.append(nextFeature)
 
             # Update counter
-            if nextFeature not in self.featureCounter:
-                self.featureCounter[nextFeature] = 0
-            self.featureCounter[nextFeature] += 1
+            if nextFeature not in featureCounter:
+                featureCounter[nextFeature] = 0
+            featureCounter[nextFeature] += 1
+
+        self.featureCounter[antNumber] = featureCounter
 
     def searchSubset(self):
         """
         Perform ACO algorithm for searching subset of features
         :return:
         """
+        from multiprocessing import Process
+
         if self.dictExists is True:
             # Step 1: initialize pheromone
             self.initPheromone()
@@ -217,9 +246,7 @@ class UFSACO:
                 print '[Iteration #' + str(cycleIteration + 1) + ']'
 
                 # Step 2: place ants in random features
-                self.ants = {}  # Initialize ants in each iteration
                 self.featureCounter = {}  # Initialize feature counter in each iteration
-                self.visitedFeatures = {}  # Initialize visited features for each ant
 
                 # Ant threads vector to work in parallel
                 antThreads = []
@@ -234,30 +261,24 @@ class UFSACO:
                             break
 
                     # Assign feature to ant and save into list of visited
-                    self.ants[antNumber] = self.dictionary.postings[randomFeatureValue]
-
-                    # initialize visited features
-                    self.visitedFeatures[antNumber] = []
+                    antCurrentFeature = self.dictionary.postings[randomFeatureValue]
 
                     # Append feature value to list
                     initialFeaturesValues.append(randomFeatureValue)
 
                     # Create new thread, append to list
-                    antThreads.append(Thread(target=self.moveAnt(antNumber)))
+                    antProc = Thread(target=self.moveAnt, args=[antNumber, antCurrentFeature])
+                    antThreads.append(antProc)
 
-                # Step 3: Move ants to the next feature
-                for antThread in antThreads:
-                    antThread.start()
+                    # Step 3: Move ants to the next feature
+                    antProc.start()
 
                 # Specify to wait until all ants finish
                 for antThread in antThreads:
                     antThread.join()
 
                 # Step 4: global pheromone update
-                self.updatePheromone()
-
-                # Store feature counter for iteration
-                self.featureCounterIteration[cycleIteration] = self.featureCounter
+                self.updatePheromone(cycleIteration=cycleIteration)
 
                 # Add iteration counter
                 cycleIteration += 1
