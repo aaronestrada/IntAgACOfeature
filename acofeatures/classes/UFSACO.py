@@ -1,5 +1,4 @@
 import random
-from threading import Thread
 from Dictionary import Dictionary
 
 
@@ -72,6 +71,7 @@ class UFSACO:
 
             # Initialize feature counter variable for ants
             self.featureCounter = {}
+            self.totalFeatureCounter = 0
 
     def initPheromone(self):
         """
@@ -91,94 +91,92 @@ class UFSACO:
         :return:
         """
         if self.dictExists is True:
-            # Merge feature counters for ants
-            globalFeatureCounter = {}
-            for antNumber in self.featureCounter:
-                antFeatureCounter = self.featureCounter[antNumber]
-                for feature in antFeatureCounter:
-                    if feature not in globalFeatureCounter:
-                        globalFeatureCounter[feature] = antFeatureCounter[feature]
-                    else:
-                        globalFeatureCounter[feature] += antFeatureCounter[feature]
-
-            # Calculate total of feature counter movements
-            totalFeatureCounter = 0
-            for token in globalFeatureCounter:
-                totalFeatureCounter += globalFeatureCounter[token]
-
             # Update pheromone in each token
-            for token in self.postingTokens:
-                tokenPheromoneValue = (1 - self.decayRate) * self.pheromoneValue[token]
+            decayValue = 1 - self.decayRate
 
-                if totalFeatureCounter > 0 and token in globalFeatureCounter:
-                    tokenPheromoneValue += float(globalFeatureCounter[token]) / totalFeatureCounter
+            for token in self.postingTokens:
+                tokenPheromoneValue = decayValue * self.pheromoneValue[token]
+
+                if self.totalFeatureCounter > 0 and token in self.featureCounter:
+                    tokenPheromoneValue += float(self.featureCounter[token]) / self.totalFeatureCounter
 
                 # Assign new value to pheromone
                 self.pheromoneValue[token] = tokenPheromoneValue
 
             # Store feature counter for iteration
-            self.featureCounterIteration[cycleIteration] = globalFeatureCounter
+            self.featureCounterIteration[cycleIteration] = self.featureCounter
 
-    def greedyTransitionRule(self, token1, unvisitedTokenList):
+    def getUnvisitedHeuristics(self, currentToken, unvisitedTokenList):
         """
-        Calculate greedy transition rule
-        :param token1: Token (from) to verify transition rule
-        :param unvisitedTokenList: List of unvisited tokens
-        :return: List with value and token to move in
+        Calculate heuristics information for unvisited feature list
+        when ant is in a specific feature
+        :param currentToken: Ant position
+        :param unvisitedTokenList: List of unvisited features by ant
+        :return: List [heuristics: list of heuristic values, max_token: for greedy movement, total_heuristics: sum of heuristic values]
         """
+        # Keep token having maximum value of heuristics
         argMaxValue = 0
         argMaxToken = None
+
+        # List of unvisited heuristics
+        unvisitedHeuristics = {}
+
+        # Keep total of heuristics sum
+        totalHeuristics = 0
+
         for unvisitedToken in unvisitedTokenList:
-            totalValue = self.pheromoneValue[unvisitedToken] * (self.dictionary.getSimilarity(token1,
-                                                                                              unvisitedToken)) ** self.beta
+            heuristicsValue = float(self.pheromoneValue[unvisitedToken] * (
+                self.dictionary.getSimilarity(currentToken, unvisitedToken) ** self.beta))
+
+            # Store heuristics value if it is different from zero
+            if heuristicsValue != 0:
+                unvisitedHeuristics[unvisitedToken] = heuristicsValue
+
+                # Increment total of heuristics
+                totalHeuristics += heuristicsValue
+
+                # In case obtained value is higher than previous maximum, substitute
+                if heuristicsValue > argMaxValue:
+                    argMaxValue = heuristicsValue
+                    argMaxToken = unvisitedToken
+
+        return {'heuristics': unvisitedHeuristics, 'max_token': argMaxToken, 'total_heuristics': totalHeuristics}
+
+    def probabilityTransitionRule(self, unvisitedHeuristics, totalUnvisited):
+        """
+        Get token with highest probability to be chosen as next feature
+        :param unvisitedHeuristics: List of unvisited tokens heuristics
+        :param totalUnvisited: Total of sum of tokens heuristics
+        :return: Token with highest probability
+        """
+        argMaxProbValue = 0
+        argMaxToken = None
+        for unvisitedToken in unvisitedHeuristics:
+            probValue = unvisitedHeuristics[unvisitedToken] / totalUnvisited
 
             # In case obtained value is higher than previous maximum, substitute
-            if totalValue > argMaxValue:
-                argMaxValue = totalValue
+            if probValue > argMaxProbValue:
+                argMaxProbValue = probValue
                 argMaxToken = unvisitedToken
 
         return argMaxToken
 
-    def getTotalTransitionRule(self, token, unvisitedTokenList):
-        """
-        Get total of transition rule among a list of features
-        :param unvisitedTokenList: List of features to calculate similarities with
-        :return: Total calculated value
-        """
-        totalUnvisited = 0
-        for unvisitedToken in unvisitedTokenList:
-            totalUnvisited += self.pheromoneValue[unvisitedToken] * (
-                (self.dictionary.getSimilarity(token, unvisitedToken)) ** self.beta)
-        return totalUnvisited
-
-    def probabilityTransitionRule(self, token1, token2, totalUnvisited):
-        """
-        Calculate probability transition rule between tokens
-        :param token1: Token (from) to verify transition rule
-        :param token2: Token (to) to verify transition rule
-        :param totalUnvisited: Total of transition rule among all features
-        :return: Probability transition rule
-        """
-        return float(
-            self.pheromoneValue[token2] * (self.dictionary.getSimilarity(token1, token2) ** self.beta)) / totalUnvisited
-
-    def moveAnt(self, antNumber, currentFeature):
+    def moveAnt(self, currentFeature):
         """
         Move ant to next feature and modify feature counter
-        :param antNumber: Number of ant to execute movement
         :param currentFeature: Feature where ant has been positioned
         :return:
         """
-        # Initialize feature counter
-        featureCounter = {}
-
-        # Initialize visited features
-        visitedFeatures = []
+        # Initialize unvisited features
+        unvisitedFeatureList = self.postingTokens.difference(currentFeature)
 
         # Execute according to the number of features an ant has to move in
         for featureNumber in range(0, self.numberFeatures):
-            # Get list of unvisited features
-            unvisitedFeatureList = self.postingTokens.difference(visitedFeatures)
+            # Get heuristic information for unvisited features
+            heuristicsInformation = self.getUnvisitedHeuristics(
+                currentToken=currentFeature,
+                unvisitedTokenList=unvisitedFeatureList
+            )
 
             """
             Random assignment to choose transition rule [0, 1]
@@ -187,47 +185,34 @@ class UFSACO:
             transitionSelection = random.random()
 
             if transitionSelection <= self.exploreExploitCoefficient:
-                # Calculate transition using greedy rule and assign next feature
-                nextFeature = self.greedyTransitionRule(token1=currentFeature,
-                                                        unvisitedTokenList=unvisitedFeatureList)
+                # Get next feature from maximum value found in heuristics information
+                nextFeature = heuristicsInformation['max_token']
             else:
                 # Calculate transition using probabilistic rule
-                totalUnvisited = self.getTotalTransitionRule(currentFeature,
-                                                             unvisitedTokenList=unvisitedFeatureList)
-
-                if totalUnvisited > 0:
-                    argMaxProbValue = 0
-                    # Calculate probability of moving to the next feature
-                    for possibleNextToken in unvisitedFeatureList:
-                        probValue = self.probabilityTransitionRule(token1=currentFeature,
-                                                                   token2=possibleNextToken,
-                                                                   totalUnvisited=totalUnvisited)
-
-                        # In case a higher probability has been found, substitute it
-                        if probValue > argMaxProbValue:
-                            argMaxProbValue = probValue
-                            nextFeature = possibleNextToken
+                nextFeature = self.probabilityTransitionRule(unvisitedHeuristics=heuristicsInformation['heuristics'],
+                                                             totalUnvisited=heuristicsInformation['total_heuristics'])
 
             # Move ant to new feature
-            currentFeature = nextFeature
+            if nextFeature is not None:
+                currentFeature = nextFeature
 
-            # Add feature to visited list
-            visitedFeatures.append(nextFeature)
+                # Remove feature from unvisited list
+                unvisitedFeatureList.remove(nextFeature)
 
-            # Update counter
-            if nextFeature not in featureCounter:
-                featureCounter[nextFeature] = 0
-            featureCounter[nextFeature] += 1
+                # Update counter
+                if nextFeature not in self.featureCounter:
+                    self.featureCounter[nextFeature] = 0
 
-        self.featureCounter[antNumber] = featureCounter
+                self.featureCounter[nextFeature] += 1
+                self.totalFeatureCounter += 1
+            else:
+                break
 
     def searchSubset(self):
         """
         Perform ACO algorithm for searching subset of features
         :return:
         """
-        from multiprocessing import Process
-
         if self.dictExists is True:
             # Step 1: initialize pheromone
             self.initPheromone()
@@ -247,9 +232,7 @@ class UFSACO:
 
                 # Step 2: place ants in random features
                 self.featureCounter = {}  # Initialize feature counter in each iteration
-
-                # Ant threads vector to work in parallel
-                antThreads = []
+                self.totalFeatureCounter = 0  # Initialize total feature counter
 
                 # This vector is used to assign ants in different features randomly
                 initialFeaturesValues = []
@@ -267,15 +250,7 @@ class UFSACO:
                     initialFeaturesValues.append(randomFeatureValue)
 
                     # Create new thread, append to list
-                    antProc = Thread(target=self.moveAnt, args=[antNumber, antCurrentFeature])
-                    antThreads.append(antProc)
-
-                    # Step 3: Move ants to the next feature
-                    antProc.start()
-
-                # Specify to wait until all ants finish
-                for antThread in antThreads:
-                    antThread.join()
+                    self.moveAnt(currentFeature=antCurrentFeature)
 
                 # Step 4: global pheromone update
                 self.updatePheromone(cycleIteration=cycleIteration)

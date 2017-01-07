@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import time
 import argparse
 import weka.core.jvm as jvm
 
@@ -71,8 +72,14 @@ def main(configFileName, outputFilePath):
             exploreExploitCoeff=optionalConfig['exploreExploitCoeff']
         )
 
+        # Start time previous to search
+        searchStartTime = time.time()
+
         # Perform feature selection using UFSACO
         aco.searchSubset()
+
+        # Ending time of searching
+        executionTime = round(time.time() - searchStartTime, 4)
 
         """
         Evaluation: performance of the following classifiers:
@@ -181,7 +188,7 @@ def main(configFileName, outputFilePath):
         if outputFilePath is not None:
             outputInFile = True
 
-        outputStr = ''
+        outputStr = '[UFSACO execution time: ' + str(executionTime) + ' seconds]\n\n'
         for featureType in classificationResult:
             outputStr += '-------------------' + ('-' * len(typeText[featureType])) + '\n'
             outputStr += 'Feature selection: ' + typeText[featureType] + '\n'

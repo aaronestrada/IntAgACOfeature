@@ -360,7 +360,7 @@ class Dictionary:
 
         # Store calculation results in file
         with open(self.dictionaryPath + fileconfig.similarityFileName, 'w') as similarityFile:
-            similarityFile.write(json.dumps(similarityMatrix))
+            similarityFile.write(json.dumps(similarityMatrix, separators=(',', ':')))
             similarityFile.close()
 
     def loadSimilarities(self):
@@ -368,6 +368,7 @@ class Dictionary:
         Load similarity values calculations
         :return:
         """
+        print '[Loading similarity values]'
         similarityMatrixFilePath = self.dictionaryPath + fileconfig.similarityFileName
         if os.path.exists(similarityMatrixFilePath):
             with open(similarityMatrixFilePath, 'r') as similarityFile:
@@ -379,7 +380,7 @@ class Dictionary:
         Free memory for similarity matrix
         :return:
         """
-        del(self.similarityMatrix)
+        del (self.similarityMatrix)
         self.similarityMatrix = {}
 
     def calculateSimilarity(self, token1, token2):
@@ -426,8 +427,7 @@ class Dictionary:
             return self.similarityMatrix[token1][token2]
         elif token2 in self.similarityMatrix and token1 in self.similarityMatrix[token2]:
             return self.similarityMatrix[token2][token1]
-        else:
-            return 0
+        return 0
 
     def saveToDisk(self, calculateSimilarities=True):
         """
@@ -445,22 +445,22 @@ class Dictionary:
                 'terms': self.termCount,
                 'documents': self.documentCount,
                 'categories': self.categories
-            }))
+            }, separators=(',', ':')))
             indexStatsFile.close()
 
         # Dump posting documents
         with open(self.dictionaryPath + fileconfig.postingDocsFileName, 'w') as postingDocumentsFile:
-            postingDocumentsFile.write(json.dumps(self.postingDocuments))
+            postingDocumentsFile.write(json.dumps(self.postingDocuments, separators=(',', ':')))
             postingDocumentsFile.close()
 
         # Dump document list
         with open(self.dictionaryPath + fileconfig.documentsFileName, 'w') as documentsFile:
-            documentsFile.write(json.dumps(self.documents))
+            documentsFile.write(json.dumps(self.documents, separators=(',', ':')))
             documentsFile.close()
 
         # Dump postings
         with open(self.dictionaryPath + fileconfig.postingsFileName, 'w') as postingsFile:
-            postingsFile.write(json.dumps(self.postings))
+            postingsFile.write(json.dumps(self.postings, separators=(',', ':')))
             postingsFile.close()
 
         # Calculate TF-IDF
@@ -469,17 +469,17 @@ class Dictionary:
 
         # Dump tf values
         with open(self.dictionaryPath + fileconfig.tfFileName, 'w') as tfFile:
-            tfFile.write(json.dumps(self.tf))
+            tfFile.write(json.dumps(self.tf, separators=(',', ':')))
             tfFile.close()
 
         # Dump idf values
         with open(self.dictionaryPath + fileconfig.idfFileName, 'w') as idfFile:
-            idfFile.write(json.dumps(self.idf))
+            idfFile.write(json.dumps(self.idf, separators=(',', ':')))
             idfFile.close()
 
         # Dump tfidf values
         with open(self.dictionaryPath + fileconfig.tfidfFileName, 'w') as tfidfFile:
-            tfidfFile.write(json.dumps(self.tfidf))
+            tfidfFile.write(json.dumps(self.tfidf, separators=(',', ':')))
             tfidfFile.close()
 
         # Calculate Information Gain and Gain Ratio for tokens and store in disk
@@ -487,11 +487,11 @@ class Dictionary:
         self.calculateInformationGainAndGainRatio()
 
         with open(self.dictionaryPath + fileconfig.informationGainFileName, 'w') as igFile:
-            igFile.write(json.dumps(self.tokenInfoGain))
+            igFile.write(json.dumps(self.tokenInfoGain, separators=(',', ':')))
             igFile.close()
 
         with open(self.dictionaryPath + fileconfig.gainRatioFileName, 'w') as grFile:
-            grFile.write(json.dumps(self.tokenGainRatio))
+            grFile.write(json.dumps(self.tokenGainRatio, separators=(',', ':')))
             grFile.close()
 
         # Calculate token similarities
