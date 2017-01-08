@@ -168,7 +168,8 @@ class UFSACO:
         :return:
         """
         # Initialize unvisited features
-        unvisitedFeatureList = self.postingTokens.difference(currentFeature)
+        unvisitedFeatureList = set(self.dictionary.postings)
+        unvisitedFeatureList.remove(currentFeature)
 
         # Execute according to the number of features an ant has to move in
         for featureNumber in range(0, self.numberFeatures):
