@@ -294,18 +294,10 @@ class Dictionary:
         :param documentsToken2: List of documents for token 2
         :return:
         """
-        totalNum = 0
-        totalTokenFrom = 0
-        totalTokenTo = 0
-
         # For each document in shared list, calculate similarity
-        for docId in documentList:
-            a = documentsToken1[docId]
-            b = documentsToken2[docId]
-
-            totalNum += (a * b)
-            totalTokenFrom += (a ** 2)
-            totalTokenTo += (b ** 2)
+        totalNum = sum([documentsToken1[docId] * documentsToken2[docId] for docId in documentList])
+        totalTokenFrom = sum([documentsToken1[docId] ** 2 for docId in documentsToken1])
+        totalTokenTo = sum([documentsToken2[docId] ** 2 for docId in documentsToken2])
 
         # Verify denominator part is not zero to perform calculation
         totalDen = totalTokenFrom * totalTokenTo
